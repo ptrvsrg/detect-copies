@@ -1,48 +1,55 @@
 package detectcopies
 
 import (
-	"log"
+	"github.com/google/uuid"
+	"log/slog"
 	"net"
+	"os"
 	"sync"
 )
 
-type Receiver struct {
-	id           string
-	address      *net.UDPAddr
-	tableManager TableManager
+const bufferSize = 1024
+
+type receiver struct {
+	ID            uuid.UUID
+	MulticastAddr *net.UDPAddr
+	TableManager  *tableManager
 }
 
-func (receiver Receiver) start(wg *sync.WaitGroup) {
+func (receiver receiver) start(wg *sync.WaitGroup) {
 	go func() {
 		defer wg.Done()
 
-		listener, err := net.ListenUDP("udp", receiver.address)
+		listener, err := net.ListenUDP("udp", receiver.MulticastAddr)
 		if err != nil {
-			log.Fatal(err)
+			slog.Error(err.Error())
+			os.Exit(1)
 		}
 
-		buffer := make([]byte, 1024)
+		slog.Info("receiver listening to " + receiver.MulticastAddr.String())
+
+		buffer := make([]byte, bufferSize)
 		for {
-			_, addr, err := listener.ReadFrom(buffer)
+			count, addr, err := listener.ReadFrom(buffer)
 			if err != nil {
-				log.Fatal(err)
+				slog.Error(err.Error())
 			}
 
 			udpAddr, err := net.ResolveUDPAddr(addr.Network(), addr.String())
 			if err != nil {
-				log.Fatal(err)
+				slog.Error(err.Error())
 			}
 
-			copyId := string(buffer)
-			if !isValidId(receiver.id, copyId) {
+			copyId := uuid.UUID{}
+			err = copyId.UnmarshalBinary(buffer[:count])
+			if err != nil {
+				slog.Error(err.Error())
+			}
+			if receiver.ID == copyId {
 				continue
 			}
 
-			receiver.tableManager.addCopy(copyId, udpAddr)
+			receiver.TableManager.addCopy(copyId, udpAddr)
 		}
 	}()
-}
-
-func isValidId(id, copyId string) bool {
-	return id == copyId
 }

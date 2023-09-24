@@ -1,33 +1,45 @@
 package detectcopies
 
 import (
-	"log"
+	"github.com/google/uuid"
+	"log/slog"
 	"net"
+	"os"
 	"sync"
 	"time"
 )
 
-type Sender struct {
-	id      string
-	address *net.UDPAddr
+const senderTimeout = 3 * time.Second
+
+type sender struct {
+	ID            uuid.UUID
+	MulticastAddr *net.UDPAddr
 }
 
-func (sender Sender) start(wg *sync.WaitGroup) {
+func (sender sender) start(waitGroup *sync.WaitGroup) {
 	go func() {
-		defer wg.Done()
+		defer waitGroup.Done()
 
-		conn, err := net.DialUDP("udp", nil, sender.address)
+		conn, err := net.DialUDP("udp", nil, sender.MulticastAddr)
 		if err != nil {
-			log.Fatal(err)
+			slog.Error(err.Error())
+			os.Exit(1)
+		}
+		slog.Info("sender running on " + conn.LocalAddr().String())
+
+		message, err := sender.ID.MarshalBinary()
+		if err != nil {
+			slog.Error(err.Error())
+			os.Exit(1)
 		}
 
 		for {
-			_, err := conn.Write([]byte(sender.id))
+			_, err := conn.Write(message)
 			if err != nil {
-				log.Fatal(err)
+				slog.Error(err.Error())
 			}
 
-			time.Sleep(3 * time.Second)
+			time.Sleep(senderTimeout)
 		}
 	}()
 }

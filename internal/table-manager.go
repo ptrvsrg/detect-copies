@@ -1,58 +1,58 @@
 package detectcopies
 
 import (
-	"log"
+	"github.com/google/uuid"
+	"log/slog"
 	"net"
 	"time"
 )
 
-type TableManager struct {
-	dateMap          map[string]time.Time
-	copyMap          map[string]*net.UDPAddr
-	garbageCollector bool
+const garbageCollectorTimeout = 5 * time.Second
+
+type tableManager struct {
+	dateMap map[uuid.UUID]time.Time
+	copyMap map[uuid.UUID]*net.UDPAddr
 }
 
-func (tableManager TableManager) addCopy(id string, address *net.UDPAddr) {
+func newTableManager() *tableManager {
+	tableManager := &tableManager{
+		dateMap: make(map[uuid.UUID]time.Time),
+		copyMap: make(map[uuid.UUID]*net.UDPAddr),
+	}
+
+	// Run garbage collector
+	go func() {
+		for {
+			tableManager.removeExpiredCopy()
+			time.Sleep(garbageCollectorTimeout)
+		}
+	}()
+
+	return tableManager
+}
+
+func (tableManager *tableManager) addCopy(id uuid.UUID, address *net.UDPAddr) {
 	_, ok := tableManager.dateMap[id]
 
 	tableManager.dateMap[id] = time.Now()
-	tableManager.dateMap[id].Add(10 * time.Second)
 	tableManager.copyMap[id] = address
 
 	if !ok {
-		log.Printf("Copy %s added", address.String())
+		slog.Info("Copy " + address.String() + " added")
 	} else {
-		log.Printf("Copy %s updated", address.String())
+		slog.Info("Copy " + address.String() + " updated")
 	}
 }
 
-func (tableManager TableManager) removeExpiredCopy() {
+func (tableManager *tableManager) removeExpiredCopy() {
 	for id, expiredTime := range tableManager.dateMap {
-		if expiredTime.Before(time.Now()) {
+		if time.Since(expiredTime).Seconds() > 10 {
 			address := tableManager.copyMap[id]
 
 			delete(tableManager.dateMap, id)
 			delete(tableManager.copyMap, id)
 
-			log.Printf("Copy %s removed", address.String())
+			slog.Info("Copy " + address.String() + " removed")
 		}
 	}
-}
-
-func (tableManager TableManager) startGarbageCollector() {
-	if tableManager.garbageCollector {
-		return
-	}
-
-	tableManager.garbageCollector = true
-	go func() {
-		for tableManager.garbageCollector {
-			tableManager.removeExpiredCopy()
-			time.Sleep(5 * time.Second)
-		}
-	}()
-}
-
-func (tableManager TableManager) stopGarbageCollector() {
-	tableManager.garbageCollector = false
 }
