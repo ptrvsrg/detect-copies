@@ -1,0 +1,51 @@
+version: "3.8"
+services:
+    process1:
+        build: ./
+        image: detect-copies-app
+        container_name: process1
+        environment:
+            GROUP_ADDRESS: ${GROUP_ADDRESS}
+            GROUP_PORT: ${GROUP_PORT}
+        networks:
+            - test-network
+    process2:
+        image: detect-copies-app
+        container_name: process2
+        depends_on:
+            - process1
+        environment:
+            GROUP_ADDRESS: ${GROUP_ADDRESS}
+            GROUP_PORT: ${GROUP_PORT}
+        networks:
+            - test-network
+    process3:
+        image: detect-copies-app
+        container_name: process3
+        depends_on:
+            - process1
+        environment:
+            GROUP_ADDRESS: ${GROUP_ADDRESS}
+            GROUP_PORT: ${GROUP_PORT}
+        networks:
+            - test-network
+    process4:
+        image: detect-copies-app
+        container_name: process4
+        depends_on:
+            - process1
+        environment:
+            GROUP_ADDRESS: ${GROUP_ADDRESS}
+            GROUP_PORT: ${GROUP_PORT}
+        networks:
+            - test-network
+networks:
+    test-network:
+        enable_ipv6: true
+        ipam:
+            driver: default
+            config:
+                - subnet: 172.20.0.0/16
+                  gateway: 172.20.0.1
+                - subnet: 2001:0DB8::/112
+                  gateway: 2001:0DB8::1
