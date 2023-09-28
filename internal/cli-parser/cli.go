@@ -8,11 +8,14 @@ import (
 )
 
 func Parse() (addr string, port int) {
+	// Create options
 	flag.StringVar(&addr, "address", "", "Multicast group address")
 	flag.IntVar(&port, "port", 0, "Multicast group port")
 
+	// Parse
 	flag.Parse()
 
+	// Check required options
 	seen := make(map[string]bool)
 	flag.Visit(func(flag *flag.Flag) {
 		seen[flag.Name] = true
@@ -23,6 +26,7 @@ func Parse() (addr string, port int) {
 		os.Exit(1)
 	}
 
+	// Validate options data
 	validateAddress(addr)
 	validatePort(port)
 
