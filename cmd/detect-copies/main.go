@@ -19,5 +19,5 @@ const title = "                                                               \n
 func main() {
 	fmt.Println(title)
 	addr, port := cliparser.Parse()
-	detectcopies.Run(addr, port)
+	detectcopies.Start(addr, port)
 }
