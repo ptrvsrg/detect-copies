@@ -1,10 +1,12 @@
 package detectcopies
 
 import (
-	"github.com/google/uuid"
-	"log/slog"
 	"net"
 	"time"
+
+	"github.com/google/uuid"
+
+	"detect-copies/internal/log"
 )
 
 const garbageCollectorTimeout = 5 * time.Second
@@ -20,7 +22,7 @@ func newTableManager() *tableManager {
 		copyMap: make(map[uuid.UUID]*net.UDPAddr),
 	}
 
-	// Run garbage collector
+	// Start garbage collector
 	go func() {
 		for {
 			tableManager.removeExpiredCopy()
@@ -38,9 +40,9 @@ func (tableManager *tableManager) addCopy(id uuid.UUID, address *net.UDPAddr) {
 	tableManager.copyMap[id] = address
 
 	if !ok {
-		slog.Info("Copy " + address.String() + " added")
+		log.Log.Infof("Copy %v added", address)
 	} else {
-		slog.Info("Copy " + address.String() + " updated")
+		log.Log.Infof("Copy %v updated", address)
 	}
 }
 
@@ -52,7 +54,7 @@ func (tableManager *tableManager) removeExpiredCopy() {
 			delete(tableManager.dateMap, id)
 			delete(tableManager.copyMap, id)
 
-			slog.Info("Copy " + address.String() + " removed")
+			log.Log.Infof("Copy %v removed", address)
 		}
 	}
 }
