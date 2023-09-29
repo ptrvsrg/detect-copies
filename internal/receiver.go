@@ -1,8 +1,10 @@
 package detectcopies
 
 import (
+	"encoding/json"
 	"net"
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -35,38 +37,46 @@ func (receiver Receiver) Start(wg *sync.WaitGroup) {
 		return
 	}
 	log.Log.Info("Receiver listening to " + receiver.multicastAddr.String())
-
-	// Create buffer
-	buffer := make([]byte, bufferSize)
+	defer listener.Close()
 
 	// Start receiving
+	jsonBytes := make([]byte, bufferSize)
+	message := Message{}
 	for {
-		// Read message
-		count, addr, err := listener.ReadFrom(buffer)
+		// Receive message
+		count, addr, err := listener.ReadFromUDP(jsonBytes)
 		if err != nil {
 			log.Log.Errorf("Reading error: %v", err)
 			return
 		}
+		log.Log.Debugf("Received message: %v", string(jsonBytes[:count]))
 
-		// Get source address
-		udpAddr, err := net.ResolveUDPAddr(addr.Network(), addr.String())
-		if err != nil {
-			log.Log.Errorf("Resolving error: %v", err)
-			continue
-		}
-
-		// Check UUID
-		copyId := uuid.UUID{}
-		err = copyId.UnmarshalBinary(buffer[:count])
+		// Convert JSON to Message
+		err = json.Unmarshal(jsonBytes[:count], &message)
 		if err != nil {
 			log.Log.Errorf("Unmarshalling error: %v", err)
 			continue
 		}
-		if receiver.id == copyId {
+
+		// Validate message
+		if !receiver.validateMessage(message) {
 			continue
 		}
 
 		// Add record to copy table
-		receiver.tableManager.addCopy(copyId, udpAddr)
+		receiver.tableManager.addCopy(message.ID, addr)
 	}
+}
+
+func (receiver Receiver) validateMessage(message Message) bool {
+	if message.Name != name {
+		return false
+	}
+	if message.Timestamp.After(time.Now()) {
+		return false
+	}
+	if message.ID.String() == receiver.id.String() {
+		return false
+	}
+	return true
 }

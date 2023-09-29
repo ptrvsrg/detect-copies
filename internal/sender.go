@@ -1,8 +1,8 @@
 package detectcopies
 
 import (
+	"encoding/json"
 	"net"
-	"os"
 	"sync"
 	"time"
 
@@ -32,21 +32,23 @@ func (sender Sender) Start(waitGroup *sync.WaitGroup) {
 	conn, err := net.DialUDP("udp", nil, sender.multicastAddr)
 	if err != nil {
 		log.Log.Errorf("Multicast sender creation error: %v", err)
-		os.Exit(1)
-	}
-	log.Log.Infof("Sender running on %v", conn.LocalAddr())
-
-	// Create message
-	message, err := sender.id.MarshalBinary()
-	if err != nil {
-		log.Log.Errorf("Unmarshalling error: %v", err)
 		return
 	}
+	log.Log.Infof("Sender running on %v", conn.LocalAddr())
+	defer conn.Close()
 
-	// Start sending
+	// Create JSON message
+	msg := NewMessage(name, sender.id)
+	jsonMsg, err := json.Marshal(msg)
+	if err != nil {
+		log.Log.Errorf("Marshalling error: %v", err)
+		return
+	}
+	log.Log.Debugf("Message to send: %v", string(jsonMsg))
+
 	for {
 		// Write message
-		_, err := conn.Write(message)
+		_, err := conn.Write(jsonMsg)
 		if err != nil {
 			log.Log.Errorf("Writing error: %v", err)
 			return
