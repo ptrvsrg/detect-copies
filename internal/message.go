@@ -1,23 +1,19 @@
 package detectcopies
 
 import (
-	"time"
-
 	"github.com/google/uuid"
 )
 
-const name = "ptrvsrg"
+const version = "1.0.0"
 
 type Message struct {
-	Name      string    `json:"name"`
-	ID        uuid.UUID `json:"id"`
-	Timestamp time.Time `json:"timestamp"`
+	Version string    `json:"version"`
+	ID      uuid.UUID `json:"id"`
 }
 
-func NewMessage(name string, id uuid.UUID) *Message {
+func NewMessage(id uuid.UUID) *Message {
 	return &Message{
-		Name:      name,
-		ID:        id,
-		Timestamp: time.Now(),
+		Version: version,
+		ID:      id,
 	}
 }

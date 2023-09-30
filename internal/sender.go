@@ -38,7 +38,7 @@ func (sender Sender) Start(waitGroup *sync.WaitGroup) {
 	defer conn.Close()
 
 	// Create JSON message
-	msg := NewMessage(name, sender.id)
+	msg := NewMessage(sender.id)
 	jsonMsg, err := json.Marshal(msg)
 	if err != nil {
 		log.Log.Errorf("Marshalling error: %v", err)

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"net"
 	"sync"
-	"time"
 
 	"github.com/google/uuid"
 
@@ -69,10 +68,7 @@ func (receiver Receiver) Start(wg *sync.WaitGroup) {
 }
 
 func (receiver Receiver) validateMessage(message Message) bool {
-	if message.Name != name {
-		return false
-	}
-	if message.Timestamp.After(time.Now()) {
+	if message.Version != version {
 		return false
 	}
 	if message.ID.String() == receiver.id.String() {
