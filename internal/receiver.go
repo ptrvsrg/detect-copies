@@ -10,14 +10,15 @@ import (
 	"detect-copies/internal/log"
 )
 
-const bufferSize = 1024
+const BUFFER_SIZE = 1024
 
 type Receiver struct {
-	id            uuid.UUID
-	multicastAddr *net.UDPAddr
-	tableManager  *tableManager
+	id            uuid.UUID     // Unique identifier for the receiver
+	multicastAddr *net.UDPAddr  // Multicast UDP address to listen to
+	tableManager  *tableManager // Reference to the tableManager to manage received copies
 }
 
+// NewReceiver creates a new Receiver instance with the given parameters.
 func NewReceiver(id uuid.UUID, multicastAddr *net.UDPAddr, tableManager *tableManager) Receiver {
 	return Receiver{
 		id:            id,
@@ -26,6 +27,7 @@ func NewReceiver(id uuid.UUID, multicastAddr *net.UDPAddr, tableManager *tableMa
 	}
 }
 
+// Start begins listening for incoming UDP messages on the multicast address.
 func (receiver Receiver) Start(wg *sync.WaitGroup) {
 	defer wg.Done()
 
@@ -39,7 +41,7 @@ func (receiver Receiver) Start(wg *sync.WaitGroup) {
 	defer listener.Close()
 
 	// Start receiving
-	jsonBytes := make([]byte, bufferSize)
+	jsonBytes := make([]byte, BUFFER_SIZE)
 	message := Message{}
 	for {
 		// Receive message
@@ -67,8 +69,9 @@ func (receiver Receiver) Start(wg *sync.WaitGroup) {
 	}
 }
 
+// validateMessage checks if the received message is valid based on certain criteria.
 func (receiver Receiver) validateMessage(message Message) bool {
-	if message.Version != version {
+	if message.Version != VERSION {
 		return false
 	}
 	if message.ID.String() == receiver.id.String() {
