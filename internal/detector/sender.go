@@ -1,4 +1,4 @@
-package detectcopies
+package detector
 
 import (
 	"encoding/json"

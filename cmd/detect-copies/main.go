@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
-	detectcopies "detect-copies/internal"
-	cliparser "detect-copies/internal/cli-parser"
+	"detect-copies/internal/cli"
+	"detect-copies/internal/detector"
 )
 
 const title = "                                                               \n" +
@@ -18,6 +18,6 @@ const title = "                                                               \n
 
 func main() {
 	fmt.Println(title)
-	addr, port := cliparser.Parse()
-	detectcopies.Start(addr, port)
+	addr, port := cli.Parse()
+	detector.Start(addr, port)
 }
