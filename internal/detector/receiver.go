@@ -32,7 +32,7 @@ func (receiver Receiver) Start(wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	// Listen to multicast group
-	listener, err := net.ListenUDP("udp", receiver.multicastAddr)
+	listener, err := net.ListenMulticastUDP("udp", nil, receiver.multicastAddr)
 	if err != nil {
 		log.Log.Errorf("Multicast listener creation error: %v", err)
 		return
